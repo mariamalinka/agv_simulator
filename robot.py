@@ -15,6 +15,34 @@ class Robot:
         self.move_delay = move_delay
         self.last_move_time = 0
 
+        self.current_task = None
+
+
+        # Robot state
+        self.state = "idle"
+
+        # Does the robot currently carry goods?
+        self.carrying = False
+
+
+
+    def assign_task(
+        self,
+        task,
+        path_to_pickup: list[tuple[int, int]],
+    ) -> None:
+        self.current_task = task
+
+        task.status = "assigned"
+
+        self.state = "to_pickup"
+        self.carrying = False
+
+        self.set_path(path_to_pickup)
+
+
+
+
     def set_path(
         self,
         path: list[tuple[int, int]],

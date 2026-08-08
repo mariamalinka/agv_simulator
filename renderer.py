@@ -68,8 +68,9 @@ def draw_warehouse(
 def draw_robot(
     screen: pygame.Surface,
     position: tuple[int, int],
+    carrying: bool = False,
 ) -> None:
-    """Draw a robot on the warehouse grid."""
+    """Draw the robot and its package if carrying."""
 
     row, column = position
 
@@ -78,9 +79,29 @@ def draw_robot(
         row * CELL_SIZE + CELL_SIZE // 2,
     )
 
+    # Draw robot
     pygame.draw.circle(
         screen,
         ROBOT_COLOR,
         center,
         CELL_SIZE // 3,
     )
+
+    # Draw package when robot is carrying something
+    if carrying:
+        PACKAGE_COLOR = (255, 180, 50)
+
+        package_size = CELL_SIZE // 3
+
+        package_rect = pygame.Rect(
+            center[0] - package_size // 2,
+            center[1] - package_size // 2,
+            package_size,
+            package_size,
+        )
+
+        pygame.draw.rect(
+            screen,
+            PACKAGE_COLOR,
+            package_rect,
+        )
