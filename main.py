@@ -4,8 +4,8 @@ import pygame
 
 from warehouse import (
     create_default_warehouse,
-    PICKUP_POSITION,
-    DELIVERY_POSITION,
+    PICKUP_POSITIONS,
+    DELIVERY_POSITIONS,
 )
 from pathfinding import astar
 
@@ -31,16 +31,33 @@ def main() -> None:
 
     start = (1, 1)
 
-    task = Task(
-        id=1,
-        pickup=PICKUP_POSITION,
-        delivery=DELIVERY_POSITION,
-    )
+    tasks = [
+        Task(
+            id=1,
+            pickup=PICKUP_POSITIONS[0],
+            delivery=DELIVERY_POSITIONS[0],
+        ),
+
+        Task(
+            id=2,
+            pickup=PICKUP_POSITIONS[1],
+            delivery=DELIVERY_POSITIONS[1],
+        ),
+
+        Task(
+            id=3,
+            pickup=PICKUP_POSITIONS[0],
+            delivery=DELIVERY_POSITIONS[1],
+        ),
+    ]
+
+    current_task_index = 0
 
     # ------------------------
     # Calculate robot route
     # ------------------------
 
+    task = tasks[current_task_index]
 
     robot = Robot(
             robot_id=1,
@@ -138,14 +155,34 @@ def main() -> None:
             robot.state == "to_delivery"
             and robot.has_reached_destination()
         ):
-            print("Task completed!")
+            print(
+                f"Task {robot.current_task.id} completed!"
+            )
 
             robot.current_task.status = "completed"
 
             robot.carrying = False
             robot.state = "idle"
-
             robot.current_task = None
+
+            current_task_index += 1
+
+            if current_task_index < len(tasks):
+                next_task = tasks[current_task_index]
+
+                path_to_pickup = astar(
+                    warehouse,
+                    robot.position,
+                    next_task.pickup,
+                )
+
+                robot.assign_task(
+                    next_task,
+                    path_to_pickup,
+                )
+
+            else:
+                print("All tasks completed!")
 
         # ------------------------
         # Draw simulation

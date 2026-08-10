@@ -7,8 +7,15 @@ DELIVERY = 3
 
 
 
-PICKUP_POSITION = (1, 18)
-DELIVERY_POSITION = (12, 18)
+PICKUP_POSITIONS = [
+    (1, 18),
+    (10, 1),
+]
+
+DELIVERY_POSITIONS = [
+    (12, 18),
+    (13, 5),
+]
 
 
 class Warehouse:
@@ -104,7 +111,10 @@ def create_default_warehouse() -> Warehouse:
     for row, column in shelf_cells:
         warehouse.add_shelf(row, column)
 
-    warehouse.add_pickup(*PICKUP_POSITION)
-    warehouse.add_delivery(*DELIVERY_POSITION)
+    for row, column in PICKUP_POSITIONS:
+        warehouse.add_pickup(row, column)
+
+    for row, column in DELIVERY_POSITIONS:
+        warehouse.add_delivery(row, column)
 
     return warehouse
