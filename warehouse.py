@@ -8,13 +8,13 @@ DELIVERY = 3
 
 
 PICKUP_POSITIONS = [
-    (1, 18),
-    (10, 1),
+    (2, 3),
+    (2, 7),
 ]
 
 DELIVERY_POSITIONS = [
-    (12, 18),
-    (13, 5),
+    (2, 19),
+    (12, 1),
 ]
 
 

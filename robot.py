@@ -3,11 +3,13 @@ class Robot:
         self,
         robot_id: int,
         start_position: tuple[int, int],
+        color: tuple[int, int, int],
         move_delay: int = 300,
     ) -> None:
 
         self.id = robot_id
         self.position = start_position
+        self.color = color
 
         self.path: list[tuple[int, int]] = []
         self.path_index = 0
@@ -24,6 +26,10 @@ class Robot:
         # Does the robot currently carry goods?
         self.carrying = False
 
+        self.wait_steps = 0
+
+        
+
 
 
     def assign_task(
@@ -39,6 +45,8 @@ class Robot:
         self.carrying = False
 
         self.set_path(path_to_pickup)
+
+        
 
 
 
@@ -80,3 +88,36 @@ class Robot:
             return True
 
         return self.path_index >= len(self.path) - 1
+
+
+    def get_next_position(self) -> tuple[int, int]:
+        """Return the next planned position without moving."""
+
+        if not self.path:
+            return self.position
+
+        if self.path_index >= len(self.path) - 1:
+            return self.position
+
+        return self.path[self.path_index + 1]
+
+
+    def move_one_step(self) -> None:
+        """Move the robot one position along its path."""
+
+        if not self.path:
+            return
+
+        if self.path_index >= len(self.path) - 1:
+            return
+
+        self.path_index += 1
+        self.position = self.path[self.path_index]
+
+
+    def reset_wait(self) -> None:
+        self.wait_steps = 0
+
+
+    def add_wait(self) -> None:
+        self.wait_steps += 1

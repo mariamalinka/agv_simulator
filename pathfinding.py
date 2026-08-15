@@ -35,8 +35,12 @@ def astar(
     warehouse: Warehouse,
     start: tuple[int, int],
     goal: tuple[int, int],
+    blocked_positions=None,
 ) -> list[tuple[int, int]]:
     open_list = [(0, start)]
+
+    if blocked_positions is None:
+        blocked_positions = set()
 
     came_from = {}
 
@@ -54,6 +58,13 @@ def astar(
             )
 
         for neighbor in warehouse.get_neighbors(current):
+
+            if (
+                neighbor in blocked_positions
+                and neighbor != goal
+            ):
+                continue
+            
             new_cost = movement_cost[current] + 1
 
             if (
