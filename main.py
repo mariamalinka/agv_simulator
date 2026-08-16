@@ -1,6 +1,7 @@
 import sys
 
 import pygame
+import random
 
 from warehouse import (
     create_default_warehouse,
@@ -11,9 +12,11 @@ from pathfinding import astar
 
 from renderer import (
     CELL_SIZE,
+    PANEL_WIDTH,
     BACKGROUND_COLOR,
     draw_warehouse,
     draw_robot,
+    draw_dashboard,
 )
 
 from robot import Robot
@@ -21,6 +24,36 @@ from robot import Robot
 from task import Task
 
 from dispatcher import assign_waiting_tasks
+from metrics import save_results
+
+
+def find_yield_position(
+    robot,
+    robots,
+    warehouse,
+    proposed_positions,
+):
+    blocked_positions = {
+        other_robot.position
+        for other_robot in robots
+        if other_robot.id != robot.id
+    }
+
+    # Also avoid cells that other robots
+    # are planning to enter.
+    blocked_positions.update(
+        proposed_positions[other_robot.id]
+        for other_robot in robots
+        if other_robot.id != robot.id
+    )
+
+    for position in warehouse.get_neighbors(
+        robot.position
+    ):
+        if position not in blocked_positions:
+            return position
+
+    return None
 
 def main() -> None:
     pygame.init()
@@ -93,8 +126,12 @@ def main() -> None:
     # Create Pygame window
     # ------------------------
 
-    window_width = (
+    warehouse_width = (
         warehouse.columns * CELL_SIZE
+    )
+
+    window_width = (
+        warehouse_width + PANEL_WIDTH
     )
 
     window_height = (
@@ -122,6 +159,13 @@ def main() -> None:
     MOVE_DELAY = 300
     last_move_time = pygame.time.get_ticks()
 
+    collisions_avoided = 0
+
+    TASK_GENERATION_DELAY = 5000  # milliseconds
+    last_task_generation_time = pygame.time.get_ticks()
+
+    next_task_id = len(tasks) + 1
+
     while running:
 
         # ========================================
@@ -143,6 +187,29 @@ def main() -> None:
         # ========================================
 
         current_time = pygame.time.get_ticks()
+
+        if (
+            current_time - last_task_generation_time
+            >= TASK_GENERATION_DELAY
+        ):
+            pickup = random.choice(PICKUP_POSITIONS)
+            delivery = random.choice(DELIVERY_POSITIONS)
+
+            new_task = Task(
+                id=next_task_id,
+                pickup=pickup,
+                delivery=delivery,
+            )
+
+            tasks.append(new_task)
+
+            print(
+                f"New Task {new_task.id}: "
+                f"{pickup} -> {delivery}"
+            )
+
+            next_task_id += 1
+            last_task_generation_time = current_time
 
 
         # ========================================
@@ -186,13 +253,66 @@ def main() -> None:
                     # Both robots want the same cell
                     # --------------------------------
 
-                    if next_position == other_next_position:
+                    if (
+                        next_position == other_robot.position
+                        and other_next_position == robot.position
+                    ):
+                        collision = True
 
-                        # Lower ID gets priority
+                        # Higher ID yields
                         if robot.id > other_robot.id:
-                            collision = True
-                            should_replan = True
-                            break
+
+                            yield_position = find_yield_position(
+                                robot,
+                                robots,
+                                warehouse,
+                                proposed_positions,
+                            )
+
+                            if yield_position is not None:
+
+                                print(
+                                    f"Robot {robot.id} yields "
+                                    f"from {robot.position} "
+                                    f"to {yield_position}"
+                                )
+
+                                robot.position = yield_position
+                                robot.distance_travelled += 1
+
+                                # Work out where it ultimately
+                                # still needs to go.
+                                if robot.state == "to_pickup":
+                                    goal = robot.current_task.pickup
+
+                                elif robot.state == "to_delivery":
+                                    goal = robot.current_task.delivery
+
+                                else:
+                                    goal = None
+
+                                if goal is not None:
+
+                                    blocked_positions = {
+                                        r.position
+                                        for r in robots
+                                        if r.id != robot.id
+                                    }
+
+                                    new_path = astar(
+                                        warehouse,
+                                        robot.position,
+                                        goal,
+                                        blocked_positions,
+                                    )
+
+                                    if new_path:
+                                        robot.set_path(new_path)
+                                        robot.replan_count += 1
+
+                                robot.reset_wait()
+
+                        break
 
 
                     # --------------------------------
@@ -207,6 +327,7 @@ def main() -> None:
                         other_next_position == other_robot.position
                     ):
                         collision = True
+                        collisions_avoided += 1
                         should_replan = True
                         break
 
@@ -222,6 +343,7 @@ def main() -> None:
                         other_next_position == robot.position
                     ):
                         collision = True
+                        collisions_avoided += 1
 
                         # Only the robot with the higher ID
                         # is responsible for finding another route.
@@ -274,9 +396,11 @@ def main() -> None:
                                 if new_path:
                                     robot.set_path(new_path)
 
+                                    robot.replan_count += 1
+
                                     print(
-                                        f"Robot {robot.id} replanned its route."
-                                    )
+                                            f"Robot {robot.id} yielded and replanned."
+                                        )
 
                         robot.reset_wait()
 
@@ -297,7 +421,7 @@ def main() -> None:
 
             if (
                 robot.state == "to_pickup"
-                and robot.has_reached_destination()
+                and robot.position == robot.current_task.pickup
             ):
                 print(
                     f"Robot {robot.id} reached pickup!"
@@ -328,7 +452,7 @@ def main() -> None:
 
             elif (
                 robot.state == "to_delivery"
-                and robot.has_reached_destination()
+                and robot.position == robot.current_task.delivery
             ):
                 print(
                     f"Robot {robot.id} completed "
@@ -372,6 +496,13 @@ def main() -> None:
                 robot.carrying,
             )
 
+        draw_dashboard(
+            screen,
+            robots,
+            tasks,
+            warehouse_width,
+        )
+
         pygame.display.flip()
 
 
@@ -380,6 +511,13 @@ def main() -> None:
         # ========================================
 
         clock.tick(60)
+
+    save_results(
+    "results.csv",
+    robots,
+    tasks,
+    collisions_avoided,
+)
 
     pygame.quit()
     sys.exit()

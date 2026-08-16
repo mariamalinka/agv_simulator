@@ -60,9 +60,7 @@ def astar(
         for neighbor in warehouse.get_neighbors(current):
 
             if (
-                neighbor in blocked_positions
-                and neighbor != goal
-            ):
+                neighbor in blocked_positions            ):
                 continue
             
             new_cost = movement_cost[current] + 1

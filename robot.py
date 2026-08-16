@@ -28,6 +28,10 @@ class Robot:
 
         self.wait_steps = 0
 
+        self.distance_travelled = 0
+        self.total_wait_steps = 0
+        self.replan_count = 0
+
         
 
 
@@ -114,6 +118,8 @@ class Robot:
         self.path_index += 1
         self.position = self.path[self.path_index]
 
+        self.distance_travelled += 1
+
 
     def reset_wait(self) -> None:
         self.wait_steps = 0
@@ -121,3 +127,8 @@ class Robot:
 
     def add_wait(self) -> None:
         self.wait_steps += 1
+        self.total_wait_steps += 1
+        
+
+
+    
