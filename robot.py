@@ -115,20 +115,18 @@ class Robot:
         if self.path_index >= len(self.path) - 1:
             return
 
+        old_position = self.position
+
         self.path_index += 1
         self.position = self.path[self.path_index]
 
-        self.distance_travelled += 1
+        if self.position != old_position:
+            self.distance_travelled += 1
+        else:
+            self.total_wait_steps += 1
 
 
-    def reset_wait(self) -> None:
-        self.wait_steps = 0
 
-
-    def add_wait(self) -> None:
-        self.wait_steps += 1
-        self.total_wait_steps += 1
-        
 
 
     
