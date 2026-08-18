@@ -30,7 +30,7 @@ class Robot:
 
         self.distance_travelled = 0
         self.total_wait_steps = 0
-        self.replan_count = 0
+        self.plans_created = 0
 
         
 
@@ -38,8 +38,7 @@ class Robot:
 
     def assign_task(
         self,
-        task,
-        path_to_pickup: list[tuple[int, int]],
+        task
     ) -> None:
         self.current_task = task
 
@@ -48,7 +47,8 @@ class Robot:
         self.state = "to_pickup"
         self.carrying = False
 
-        self.set_path(path_to_pickup)
+        self.path = []
+        self.path_index = 0
 
         
 

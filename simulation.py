@@ -60,7 +60,7 @@ class Simulation:
         # With reservation planning, conflicts are
         # prevented during planning rather than by
         # the old reactive collision code.
-        self.collisions_avoided = 0
+        
 
         self.running = True
 
@@ -120,11 +120,21 @@ class Simulation:
         ):
             return
 
+            # Remember positions before movement
+        old_positions = {
+            robot.id: robot.position
+            for robot in self.robots
+        }
+
         # The paths were already coordinated by
         # Space-Time A*, so robots can now simply
         # execute one planned step.
         for robot in self.robots:
             robot.move_one_step()
+
+        self.check_collisions(
+            old_positions
+        )
 
         self.simulation_step += 1
 
@@ -365,7 +375,7 @@ class Simulation:
             "results.csv",
             self.robots,
             self.tasks,
-            self.collisions_avoided,
+           
         )
 
     def check_collisions(

@@ -26,7 +26,6 @@ def assign_waiting_tasks(
             return
 
         best_robot = None
-        best_path = None
         best_distance = float("inf")
 
         for robot in idle_robots:
@@ -45,14 +44,11 @@ def assign_waiting_tasks(
             if distance < best_distance:
                 best_distance = distance
                 best_robot = robot
-                best_path = path
+             
 
         if best_robot is not None:
 
-            best_robot.assign_task(
-                task,
-                best_path,
-            )
+            best_robot.assign_task(task)
 
             print(
                 f"Task {task.id} assigned "

@@ -6,3 +6,5 @@ robots,tasks,completed_tasks,distance,wait_steps,replans,collisions_avoided
 2,14,11,344,0,0,0
 2,6,2,88,0,0,0
 2,14,11,338,0,0,0
+2,262,260,7411,0,0,0
+2,32,30,884,1,130

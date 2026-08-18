@@ -71,6 +71,8 @@ def replan_all_robots(
         if path:
             robot.set_path(path)
 
+            robot.plans_created+=1
+
             reservations.reserve_path(
                 path,
                 start_time=simulation_step,

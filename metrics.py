@@ -6,7 +6,6 @@ def save_results(
     filename: str,
     robots,
     tasks,
-    collisions_avoided: int,
 ) -> None:
 
     completed_tasks = sum(
@@ -25,8 +24,8 @@ def save_results(
         for robot in robots
     )
 
-    total_replans = sum(
-        robot.replan_count
+    total_plans = sum(
+        robot.plans_created
         for robot in robots
     )
 
@@ -40,16 +39,14 @@ def save_results(
 
         writer = csv.writer(file)
 
-        # Write headers only once
         if not file_exists:
             writer.writerow([
                 "robots",
-                "tasks",
+                "tasks_generated",
                 "completed_tasks",
                 "distance",
                 "wait_steps",
-                "replans",
-                "collisions_avoided",
+                "plans_created",
             ])
 
         writer.writerow([
@@ -58,6 +55,5 @@ def save_results(
             completed_tasks,
             total_distance,
             total_wait_steps,
-            total_replans,
-            collisions_avoided,
+            total_plans,
         ])

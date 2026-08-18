@@ -209,7 +209,7 @@ def draw_dashboard(
         y += 25
 
         replan_text = text_font.render(
-            f"Replans: {robot.replan_count}",
+            f"Plans: {robot.plans_created}",
             True,
             TEXT_COLOR,
         )
