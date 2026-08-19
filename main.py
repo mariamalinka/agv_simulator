@@ -19,6 +19,26 @@ from planner import replan_all_robots
 from simulation import Simulation
 
 
+NUMBER_OF_ROBOTS = 6
+
+ROBOT_START_POSITIONS = [
+    (1, 1),
+    (13, 18),
+    (13, 1),
+    (1, 17),
+    (10, 5),
+    (10, 14),
+]
+
+ROBOT_COLORS = [
+    (50, 120, 220),   # blue
+    (180, 80, 200),   # purple
+    (240, 140, 40),   # orange
+    (40, 170, 160),   # turquoise
+    (220, 80, 120),   # pink/red
+    (120, 160, 60),   # green
+]
+
 def main() -> None:
     pygame.init()
 
@@ -56,18 +76,23 @@ def main() -> None:
     # ------------------------
     # Create robots
     # ------------------------
-    robots = [
-        Robot(
-            robot_id=1,
-            start_position=(1, 1),
-            color=(50, 120, 220),
-        ),
-        Robot(
-            robot_id=2,
-            start_position=(13, 18),
-            color=(180, 80, 200),
-        ),
-    ]
+
+    if NUMBER_OF_ROBOTS > len(ROBOT_START_POSITIONS):
+        raise ValueError(
+            "Not enough robot start positions."
+        )
+    
+    robots = []
+
+    for i in range(NUMBER_OF_ROBOTS):
+
+        robot = Robot(
+            robot_id=i + 1,
+            start_position=ROBOT_START_POSITIONS[i],
+            color=ROBOT_COLORS[i],
+        )
+
+        robots.append(robot)
 
     # ------------------------
     # Assign initial tasks
@@ -76,6 +101,7 @@ def main() -> None:
         robots,
         tasks,
         warehouse,
+        simulation_time=0,
     )
 
     # ------------------------

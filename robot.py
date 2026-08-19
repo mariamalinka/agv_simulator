@@ -31,6 +31,7 @@ class Robot:
         self.distance_travelled = 0
         self.total_wait_steps = 0
         self.plans_created = 0
+        self.idle_steps = 0
 
         
 
@@ -49,6 +50,8 @@ class Robot:
 
         self.path = []
         self.path_index = 0
+
+       
 
         
 
@@ -97,6 +100,7 @@ class Robot:
     def get_next_position(self) -> tuple[int, int]:
         """Return the next planned position without moving."""
 
+
         if not self.path:
             return self.position
 
@@ -109,10 +113,17 @@ class Robot:
     def move_one_step(self) -> None:
         """Move the robot one position along its path."""
 
+        # Robot has no job
+        if self.current_task is None:
+            self.idle_steps += 1
+            return
+
         if not self.path:
+            self.total_wait_steps += 1
             return
 
         if self.path_index >= len(self.path) - 1:
+            self.total_wait_steps += 1
             return
 
         old_position = self.position
@@ -120,8 +131,11 @@ class Robot:
         self.path_index += 1
         self.position = self.path[self.path_index]
 
+        #robot moved
         if self.position != old_position:
             self.distance_travelled += 1
+
+        #space time a* planned a wait
         else:
             self.total_wait_steps += 1
 

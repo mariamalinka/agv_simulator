@@ -5,6 +5,7 @@ def assign_waiting_tasks(
     robots,
     tasks,
     warehouse,
+    simulation_time,
 ) -> None:
     """Assign waiting tasks to the nearest idle robot."""
 
@@ -49,6 +50,7 @@ def assign_waiting_tasks(
         if best_robot is not None:
 
             best_robot.assign_task(task)
+            task.assigned_at = simulation_time
 
             print(
                 f"Task {task.id} assigned "

@@ -46,11 +46,8 @@ class Simulation:
         self.move_delay = 300
         self.last_move_time = pygame.time.get_ticks()
 
-        # Generate one new task every 5 seconds.
-        self.task_generation_delay = 5000
-        self.last_task_generation_time = (
-            pygame.time.get_ticks()
-        )
+        self.task_generation_interval = 15
+        self.next_task_generation_time = 15
 
         self.next_task_id = len(tasks) + 1
 
@@ -64,18 +61,21 @@ class Simulation:
 
         self.running = True
 
+        self.simulation_time = 0
+
+        # Length of one experiment
+        self.simulation_duration = 600
+
     # ==================================================
     # TASK GENERATION
     # ==================================================
 
     def generate_task_if_needed(
-        self,
-        current_time: int,
+        self
     ) -> None:
         if (
-            current_time
-            - self.last_task_generation_time
-            < self.task_generation_delay
+            self.simulation_time
+            < self.next_task_generation_time
         ):
             return
 
@@ -91,6 +91,7 @@ class Simulation:
             id=self.next_task_id,
             pickup=pickup,
             delivery=delivery,
+            created_at=self.simulation_time,
         )
 
         self.tasks.append(new_task)
@@ -102,8 +103,8 @@ class Simulation:
 
         self.next_task_id += 1
 
-        self.last_task_generation_time = (
-            current_time
+        self.next_task_generation_time += (
+            self.task_generation_interval
         )
 
     # ==================================================
@@ -137,6 +138,7 @@ class Simulation:
         )
 
         self.simulation_step += 1
+        self.simulation_time += 1
 
         self.last_move_time = current_time
 
@@ -175,6 +177,9 @@ class Simulation:
                 robot.current_task.status = (
                     "picked_up"
                 )
+                robot.current_task.picked_up_at = (
+                self.simulation_time
+            )
 
                 # Important:
                 # Do NOT calculate normal A* here.
@@ -206,6 +211,10 @@ class Simulation:
                 robot.current_task.status = (
                     "completed"
                 )
+
+                robot.current_task.completed_at = (
+                self.simulation_time
+            )
 
                 robot.carrying = False
                 robot.state = "idle"
@@ -241,7 +250,10 @@ class Simulation:
             self.robots,
             self.tasks,
             self.warehouse,
+            self.simulation_time,
+            
         )
+        
 
         after = {
             robot.id: (
@@ -251,6 +263,7 @@ class Simulation:
             )
             for robot in self.robots
         }
+        
 
         return before != after
 
@@ -292,6 +305,10 @@ class Simulation:
             self.robots,
             self.tasks,
             self.warehouse_width,
+            self.simulation_time,
+            self.simulation_duration,
+            self.get_throughput(),
+            
         )
 
         pygame.display.flip()
@@ -326,9 +343,7 @@ class Simulation:
             # ------------------------------
             # Generate new work
             # ------------------------------
-            self.generate_task_if_needed(
-                current_time
-            )
+            self.generate_task_if_needed()
 
             # ------------------------------
             # Execute planned movement
@@ -361,6 +376,10 @@ class Simulation:
             if needs_replan:
                 self.replan()
 
+            if self.simulation_time >= self.simulation_duration:
+                print("Simulation finished!")
+                self.running = False
+
             # ------------------------------
             # Draw
             # ------------------------------
@@ -387,15 +406,23 @@ class Simulation:
         # --------------------------------
         # Same-cell collision
         # --------------------------------
-        positions = [
-            robot.position
-            for robot in self.robots
-        ]
+        positions = {}
 
-        if len(positions) != len(set(positions)):
-            raise RuntimeError(
-                "Collision: two robots occupy the same cell!"
-            )
+        for robot in self.robots:
+
+            if robot.position in positions:
+
+                other_robot_id = positions[
+                    robot.position
+                ]
+
+                raise RuntimeError(
+                    f"Collision at {robot.position}: "
+                    f"Robot {other_robot_id} and "
+                    f"Robot {robot.id}"
+                )
+
+            positions[robot.position] = robot.id
 
         # --------------------------------
         # Swap collision
@@ -420,3 +447,25 @@ class Simulation:
                         f"Robot {robot.id} and "
                         f"Robot {other_robot.id}!"
                     )
+
+
+
+    def get_throughput(self) -> float:
+        completed_tasks = sum(
+            1
+            for task in self.tasks
+            if task.status == "completed"
+        )
+
+        if self.simulation_time == 0:
+            return 0.0
+
+        simulated_minutes = (
+            self.simulation_time / 60
+        )
+
+        return (
+            completed_tasks
+            / simulated_minutes
+        )
+

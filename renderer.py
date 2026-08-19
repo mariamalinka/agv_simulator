@@ -8,7 +8,7 @@ from warehouse import (
 )
 
 CELL_SIZE = 40
-PANEL_WIDTH = 300
+PANEL_WIDTH = 400
 
 PANEL_COLOR = (225, 225, 225)
 TEXT_COLOR = (30, 30, 30)
@@ -17,7 +17,7 @@ BACKGROUND_COLOR = (240, 240, 240)
 GRID_COLOR = (190, 190, 190)
 
 SHELF_COLOR = (80, 80, 80)
-ROBOT_COLOR = (50, 120, 220)
+
 PICKUP_COLOR = (50, 200, 80)
 DELIVERY_COLOR = (220, 80, 80)
 
@@ -114,6 +114,9 @@ def draw_dashboard(
     robots,
     tasks,
     warehouse_width: int,
+    simulation_time,
+    simulation_duration,
+    throughput,
 ) -> None:
 
     panel_rect = pygame.Rect(
@@ -145,84 +148,132 @@ def draw_dashboard(
 
     y += 50
 
-    # Robot information
-    for robot in robots:
+    # --------------------------------
+    # ROBOT STATUS
+    # --------------------------------
 
+    robot_start_y = 70
+
+    column_width = 205
+    row_height = 135
+
+    for index, robot in enumerate(robots):
+
+        column = index % 2
+        row = index // 2
+
+        robot_x = (
+            warehouse_width
+            + 15
+            + column * column_width
+        )
+
+        robot_y = (
+            robot_start_y
+            + row * row_height
+        )
+
+        # Robot name
         robot_text = text_font.render(
             f"Robot {robot.id}",
             True,
             robot.color,
         )
 
-        screen.blit(robot_text, (x, y))
-        y += 25
+        screen.blit(
+            robot_text,
+            (robot_x, robot_y),
+        )
 
+        robot_y += 25
+
+        # State
         state_text = text_font.render(
             f"State: {robot.state}",
             True,
             TEXT_COLOR,
         )
 
-        screen.blit(state_text, (x, y))
-        y += 25
+        screen.blit(
+            state_text,
+            (robot_x, robot_y),
+        )
 
+        robot_y += 22
+
+        # Task
         if robot.current_task is not None:
-            task_number = robot.current_task.id
+            task_id = robot.current_task.id
         else:
-            task_number = "-"
+            task_id = "-"
 
         task_text = text_font.render(
-            f"Task: {task_number}",
+            f"Task: {task_id}",
             True,
             TEXT_COLOR,
         )
 
-        screen.blit(task_text, (x, y))
-        y += 25
+        screen.blit(
+            task_text,
+            (robot_x, robot_y),
+        )
 
-        carrying_text = text_font.render(
-            f"Carrying: {'Yes' if robot.carrying else 'No'}",
+        robot_y += 22
+
+        # Carrying + distance
+        carrying = (
+            "Yes"
+            if robot.carrying
+            else "No"
+        )
+
+        info_text = text_font.render(
+            f"Carry: {carrying}  Dist: {robot.distance_travelled}",
             True,
             TEXT_COLOR,
         )
 
-        screen.blit(carrying_text, (x, y))
-        
-        y += 45
+        screen.blit(
+            info_text,
+            (robot_x, robot_y),
+        )
 
-        distance_text = text_font.render(
-            f"Distance: {robot.distance_travelled}",
+        robot_y += 22
+
+        # Waiting + plans
+        stats_text = text_font.render(
+            f"Wait: {robot.total_wait_steps}  Plans: {robot.plans_created}",
             True,
             TEXT_COLOR,
         )
 
-        screen.blit(distance_text, (x, y))
-        y += 25
-
-        wait_text = text_font.render(
-            f"Wait steps: {robot.total_wait_steps}",
-            True,
-            TEXT_COLOR,
+        screen.blit(
+            stats_text,
+            (robot_x, robot_y),
         )
 
-        screen.blit(wait_text, (x, y))
-        y += 25
 
-        replan_text = text_font.render(
-            f"Plans: {robot.plans_created}",
-            True,
-            TEXT_COLOR,
-        )
+    number_of_rows = (
+        len(robots) + 1
+    ) // 2
 
-        screen.blit(replan_text, (x, y))
-        y += 40
-
+    y = (
+        robot_start_y
+        + number_of_rows * row_height
+        + 10
+    )
  
 
     waiting_tasks = sum(
         1
         for task in tasks
         if task.status == "waiting"
+    )
+
+    idle_robots = sum(
+        1
+        for robot in robots
+        if robot.state == "idle"
     )
 
     completed_tasks = sum(
@@ -237,8 +288,21 @@ def draw_dashboard(
         TEXT_COLOR,
     )
 
+
+
     screen.blit(waiting_text, (x, y))
     y += 30
+
+    idle_text = text_font.render(
+        f"Idle robots: {idle_robots}",
+        True,
+        TEXT_COLOR,
+    )
+
+    screen.blit(idle_text, (x, y))
+    y += 30
+
+
 
     completed_text = text_font.render(
         f"Completed tasks: {completed_tasks}",
@@ -247,3 +311,16 @@ def draw_dashboard(
     )
 
     screen.blit(completed_text, (x, y))
+    y+=30
+
+    simulation_text = text_font.render(
+        f"Simulated time: {simulation_time}/{simulation_duration}s",
+        True,
+        TEXT_COLOR,
+    )
+
+    screen.blit(
+        simulation_text,
+        (x, y),
+    )
+    
