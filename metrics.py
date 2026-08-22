@@ -31,6 +31,9 @@ def save_results(
     filename: str,
     robots,
     tasks,
+    random_seed: int,
+    simulation_duration: int,
+    throughput: float,
 ) -> None:
 
     completed_tasks = sum(
@@ -86,9 +89,12 @@ def save_results(
         if not file_exists:
             writer.writerow([
                 "robots",
+                "random_seed",
+                "simulation_duration",
                 "tasks_generated",
                 "completed_tasks",
                 "waiting_tasks",
+                "throughput",
                 "distance",
                 "wait_steps",
                 "idle_steps",
@@ -99,9 +105,12 @@ def save_results(
 
         writer.writerow([
             len(robots),
+            random_seed,
+            simulation_duration,
             len(tasks),
             completed_tasks,
             waiting_tasks,
+            round(throughput, 2),
             total_distance,
             total_wait_steps,
             total_idle_steps,

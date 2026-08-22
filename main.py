@@ -18,8 +18,11 @@ from planner import replan_all_robots
 
 from simulation import Simulation
 
+from config import (
+    NUMBER_OF_ROBOTS,
+    RANDOM_SEED,
+)
 
-NUMBER_OF_ROBOTS = 6
 
 ROBOT_START_POSITIONS = [
     (1, 1),
@@ -39,7 +42,11 @@ ROBOT_COLORS = [
     (120, 160, 60),   # green
 ]
 
-def main() -> None:
+def main(    
+    number_of_robots=NUMBER_OF_ROBOTS,
+    random_seed=RANDOM_SEED,
+    visual=True,
+    ) -> None:
     pygame.init()
 
     # ------------------------
@@ -77,14 +84,14 @@ def main() -> None:
     # Create robots
     # ------------------------
 
-    if NUMBER_OF_ROBOTS > len(ROBOT_START_POSITIONS):
+    if number_of_robots > len(ROBOT_START_POSITIONS):
         raise ValueError(
             "Not enough robot start positions."
         )
     
     robots = []
 
-    for i in range(NUMBER_OF_ROBOTS):
+    for i in range(number_of_robots):
 
         robot = Robot(
             robot_id=i + 1,
@@ -116,28 +123,34 @@ def main() -> None:
     )
 
     # ------------------------
-    # Create Pygame window
+    # Window dimensions
     # ------------------------
+
     warehouse_width = (
         warehouse.columns * CELL_SIZE
-    )
-
-    window_width = (
-        warehouse_width + PANEL_WIDTH
     )
 
     window_height = (
         warehouse.rows * CELL_SIZE
     )
 
-    screen = pygame.display.set_mode(
-        (window_width, window_height)
-    )
 
-    pygame.display.set_caption(
-        "AGV Warehouse Simulator"
-    )
+    if visual:
 
+        window_width = (
+            warehouse_width + PANEL_WIDTH
+        )
+
+        screen = pygame.display.set_mode(
+            (window_width, window_height)
+        )
+
+        pygame.display.set_caption(
+            "AGV Warehouse Simulator"
+        )
+
+    else:
+        screen = None
     # ------------------------
     # Start simulation
     # ------------------------
@@ -149,6 +162,8 @@ def main() -> None:
         reservations=reservations,
         simulation_step=simulation_step,
         warehouse_width=warehouse_width,
+        random_seed=random_seed,
+        visual=visual,
     )
 
     simulation.run()

@@ -18,6 +18,13 @@ from renderer import (
 )
 from metrics import save_results
 
+from config import (
+    SIMULATION_DURATION,
+    TASK_GENERATION_INTERVAL,
+    MOVE_DELAY,
+)
+
+
 
 class Simulation:
     def __init__(
@@ -29,42 +36,55 @@ class Simulation:
         reservations,
         simulation_step,
         warehouse_width,
+        random_seed=42,
+        visual=True,
     ) -> None:
+
+        
         self.screen = screen
         self.warehouse = warehouse
+
+        # IMPORTANT
         self.robots = robots
         self.tasks = tasks
 
         self.reservations = reservations
         self.simulation_step = simulation_step
-
         self.warehouse_width = warehouse_width
-
         self.clock = pygame.time.Clock()
 
-        # One simulation movement step every 300 ms.
-        self.move_delay = 300
+        # Visual movement speed
+        self.move_delay = MOVE_DELAY
         self.last_move_time = pygame.time.get_ticks()
 
-        self.task_generation_interval = 15
-        self.next_task_generation_time = 15
+        # Random generator for reproducible experiments
+        self.random_seed = random_seed
+
+        self.random_generator = random.Random(
+            random_seed
+        )
+
+        # Generate one task every 15 simulated seconds
+        self.task_generation_interval = (
+            TASK_GENERATION_INTERVAL
+        )
+
+        self.next_task_generation_time = (
+            TASK_GENERATION_INTERVAL
+        )
 
         self.next_task_id = len(tasks) + 1
 
-        # Kept only because the current metrics.py
-        # still expects this argument.
-        #
-        # With reservation planning, conflicts are
-        # prevented during planning rather than by
-        # the old reactive collision code.
-        
-
         self.running = True
 
+        # Simulated experiment time
         self.simulation_time = 0
+        self.simulation_duration = (
+            SIMULATION_DURATION
+        )
+        self.visual = visual
 
-        # Length of one experiment
-        self.simulation_duration = 600
+        
 
     # ==================================================
     # TASK GENERATION
@@ -79,11 +99,11 @@ class Simulation:
         ):
             return
 
-        pickup = random.choice(
+        pickup = self.random_generator.choice(
             PICKUP_POSITIONS
         )
 
-        delivery = random.choice(
+        delivery = self.random_generator.choice(
             DELIVERY_POSITIONS
         )
 
@@ -115,11 +135,12 @@ class Simulation:
         self,
         current_time: int,
     ) -> None:
-        if (
-            current_time - self.last_move_time
-            < self.move_delay
-        ):
-            return
+        if self.visual:
+            if (
+                current_time - self.last_move_time
+                < self.move_delay
+            ):
+                return
 
             # Remember positions before movement
         old_positions = {
@@ -140,7 +161,8 @@ class Simulation:
         self.simulation_step += 1
         self.simulation_time += 1
 
-        self.last_move_time = current_time
+        if self.visual:
+            self.last_move_time = current_time
 
     # ==================================================
     # PICKUP / DELIVERY
@@ -323,18 +345,19 @@ class Simulation:
             # ------------------------------
             # Events
             # ------------------------------
-            for event in pygame.event.get():
+            if self.visual:
+                for event in pygame.event.get():
 
-                if event.type == pygame.QUIT:
-                    self.running = False
+                    if event.type == pygame.QUIT:
+                        self.running = False
 
-                elif (
-                    event.type
-                    == pygame.KEYDOWN
-                    and event.key
-                    == pygame.K_ESCAPE
-                ):
-                    self.running = False
+                    elif (
+                        event.type
+                        == pygame.KEYDOWN
+                        and event.key
+                        == pygame.K_ESCAPE
+                    ):
+                        self.running = False
 
             current_time = (
                 pygame.time.get_ticks()
@@ -383,9 +406,9 @@ class Simulation:
             # ------------------------------
             # Draw
             # ------------------------------
-            self.draw()
-
-            self.clock.tick(60)
+            if self.visual:
+                self.draw()
+                self.clock.tick(60)
 
         # ------------------------------
         # Save results on exit
@@ -394,6 +417,9 @@ class Simulation:
             "results.csv",
             self.robots,
             self.tasks,
+            self.random_seed,
+            self.simulation_duration,
+            self.get_throughput(),
            
         )
 
