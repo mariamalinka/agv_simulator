@@ -1,36 +1,44 @@
 from main import main
+from config import SimulationConfig
+from metrics import save_result
 
 
-ROBOT_COUNTS = [
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-]
-
-RANDOM_SEEDS = [
-    1,
-    2,
-    3,
-    4,
-    5,
-]
+ROBOT_COUNTS = [1, 2, 3, 4, 5, 6]
+SEEDS = [1, 2, 3, 4, 5]
+TASK_INTERVALS = [10, 15, 20]
 
 
-for robot_count in ROBOT_COUNTS:
+for task_interval in TASK_INTERVALS:
 
-    for seed in RANDOM_SEEDS:
+    for robot_count in ROBOT_COUNTS:
 
-        print(
-            f"Experiment: "
-            f"{robot_count} robots, "
-            f"seed {seed}"
-        )
+        for seed in SEEDS:
 
-        main(
-            number_of_robots=robot_count,
-            random_seed=seed,
-            visual=False,
-        )
+            config = SimulationConfig(
+                number_of_robots=robot_count,
+                random_seed=seed,
+                simulation_duration=600,
+                task_generation_interval=task_interval,
+                visual=False,
+            )
+
+            print(
+                f"Running: "
+                f"{robot_count} robots, "
+                f"seed={seed}, "
+                f"interval={task_interval}"
+            )
+
+            result = main(config)
+
+            save_result(
+                "results.csv",
+                result,
+            )
+
+            print(
+                f"Completed: "
+                f"{result.completed_tasks}, "
+                f"Throughput: "
+                f"{result.throughput:.2f}"
+            )

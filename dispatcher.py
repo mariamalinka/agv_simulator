@@ -18,7 +18,8 @@ def assign_waiting_tasks(
     idle_robots = [
         robot
         for robot in robots
-        if robot.state == "idle"
+        if robot.current_task is None
+
     ]
 
     for task in waiting_tasks:

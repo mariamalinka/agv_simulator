@@ -1,18 +1,47 @@
-# =========================
+# ==========================================
+# DEFAULT VISUAL SIMULATION SETTINGS
+# ==========================================
+
+from dataclasses import dataclass
+
+
+@dataclass
+class SimulationConfig:
+    number_of_robots: int = 2
+    simulation_duration: int = 600
+    task_generation_interval: int = 15
+    random_seed: int = 42
+
+    # Only affects visualization speed
+    move_delay: int = 300
+
+    visual: bool = True
+    max_drain_time: int = 1200
+    replan_interval: int = 5
+
+# ==========================================
 # EXPERIMENT SETTINGS
-# =========================
+# ==========================================
 
-NUMBER_OF_ROBOTS = 6
+EXPERIMENT_ROBOT_COUNTS = [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+]
 
-SIMULATION_DURATION = 600
+EXPERIMENT_SEEDS = [
+    1,
+    2,
+    3,
+    4,
+    5,
+]
 
-TASK_GENERATION_INTERVAL = 15
-
-RANDOM_SEED = 42
-
-
-# =========================
-# VISUAL SETTINGS
-# =========================
-
-MOVE_DELAY = 300
+EXPERIMENT_TASK_INTERVALS = [
+    10,
+    15,
+    20,
+]

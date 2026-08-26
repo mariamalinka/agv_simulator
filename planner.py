@@ -6,7 +6,9 @@ PLANNING_HORIZON = 100
 
 
 def get_robot_goal(robot):
-    """Return the robot's current destination."""
+
+    if robot.state == "to_parking":
+        return robot.home_position
 
     if robot.current_task is None:
         return None
@@ -20,10 +22,75 @@ def get_robot_goal(robot):
     return None
 
 
+def validate_planned_paths(
+    robots,
+    simulation_step,
+) -> None:
+    """
+    Validate paths only until the next guaranteed
+    replanning event.
+
+    The first moving robot that reaches the end
+    of its path causes coordinated replanning.
+    """
+
+    moving_robots = [
+        robot
+        for robot in robots
+        if len(robot.path) > 1
+    ]
+
+    if not moving_robots:
+        return
+
+    # Earliest point where one moving robot
+    # reaches its current goal.
+    check_until = min(
+        len(robot.path) - 1
+        for robot in moving_robots
+    )
+
+    for path_index in range(
+        check_until + 1
+    ):
+
+        positions = {}
+
+        for robot in robots:
+
+            # Stationary robot
+            if len(robot.path) <= 1:
+                position = robot.position
+
+            # Moving robot
+            else:
+                position = robot.path[
+                    path_index
+                ]
+
+            if position in positions:
+
+                other_id = positions[
+                    position
+                ]
+
+                raise RuntimeError(
+                    f"PLANNER CONFLICT at "
+                    f"time "
+                    f"{simulation_step + path_index}: "
+                    f"Robot {other_id} and "
+                    f"Robot {robot.id} both at "
+                    f"{position}"
+                )
+
+            positions[position] = robot.id
+
+
 def replan_all_robots(
     robots,
     warehouse,
     simulation_step,
+    priority_offset=0,
 ):
     max_time = (
         simulation_step + PLANNING_HORIZON
@@ -33,6 +100,17 @@ def replan_all_robots(
         robots,
         key=lambda robot: robot.id,
     )
+
+    if sorted_robots:
+        offset = (
+            priority_offset
+            % len(sorted_robots)
+        )
+
+        sorted_robots = (
+            sorted_robots[offset:]
+            + sorted_robots[:offset]
+        )
 
     # Robots with no task are stationary.
     stationary_robot_ids = {
@@ -100,9 +178,19 @@ def replan_all_robots(
 
             planned_paths[robot.id] = path
 
+            arrival_time = (
+                simulation_step
+                + len(path)
+                - 1
+            )
+
             reservations.reserve_path(
                 path,
                 start_time=simulation_step,
+                hold_until=min(
+                    arrival_time + 1,
+                    max_time,
+                ),
             )
 
         # ---------------------------------
@@ -126,6 +214,12 @@ def replan_all_robots(
                     if path:
                         robot.set_path(path)
                         robot.plans_created += 1
+
+
+            validate_planned_paths(
+                sorted_robots,
+                simulation_step,
+            )
 
             return reservations
 

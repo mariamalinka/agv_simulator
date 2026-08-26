@@ -16,14 +16,13 @@ from renderer import (
     draw_robot,
     draw_dashboard,
 )
-from metrics import save_results
 
-from config import (
-    SIMULATION_DURATION,
-    TASK_GENERATION_INTERVAL,
-    MOVE_DELAY,
+from config import SimulationConfig
+
+from results import (
+    SimulationResult,
+    build_simulation_result,
 )
-
 
 
 class Simulation:
@@ -36,54 +35,46 @@ class Simulation:
         reservations,
         simulation_step,
         warehouse_width,
-        random_seed=42,
-        visual=True,
+        config: SimulationConfig,
     ) -> None:
 
-        
+
         self.screen = screen
         self.warehouse = warehouse
-
-        # IMPORTANT
         self.robots = robots
         self.tasks = tasks
 
         self.reservations = reservations
         self.simulation_step = simulation_step
         self.warehouse_width = warehouse_width
-        self.clock = pygame.time.Clock()
 
-        # Visual movement speed
-        self.move_delay = MOVE_DELAY
-        self.last_move_time = pygame.time.get_ticks()
+        self.config = config
 
-        # Random generator for reproducible experiments
-        self.random_seed = random_seed
+        # -------------------------
+        # Simulation state
+        # -------------------------
 
-        self.random_generator = random.Random(
-            random_seed
-        )
-
-        # Generate one task every 15 simulated seconds
-        self.task_generation_interval = (
-            TASK_GENERATION_INTERVAL
-        )
+        self.simulation_time = 0
+        self.next_task_id = len(tasks) + 1
 
         self.next_task_generation_time = (
-            TASK_GENERATION_INTERVAL
+            config.task_generation_interval
         )
 
-        self.next_task_id = len(tasks) + 1
+        self.random_generator = random.Random(
+            config.random_seed
+        )
+
+        self.visual = config.visual
+        self.move_delay = config.move_delay
 
         self.running = True
 
-        # Simulated experiment time
-        self.simulation_time = 0
-        self.simulation_duration = (
-            SIMULATION_DURATION
-        )
-        self.visual = visual
+        self.clock = pygame.time.Clock()
+        self.last_move_time = pygame.time.get_ticks()
 
+        self.last_stuck_replan_step = -1
+        self.replan_number = 0
         
 
     # ==================================================
@@ -93,6 +84,13 @@ class Simulation:
     def generate_task_if_needed(
         self
     ) -> None:
+
+        if (
+            self.simulation_time
+            >= self.config.simulation_duration
+        ):        
+            return
+
         if (
             self.simulation_time
             < self.next_task_generation_time
@@ -124,7 +122,7 @@ class Simulation:
         self.next_task_id += 1
 
         self.next_task_generation_time += (
-            self.task_generation_interval
+            self.config.task_generation_interval
         )
 
     # ==================================================
@@ -178,6 +176,21 @@ class Simulation:
 
         for robot in self.robots:
 
+            # Robot reached its parking position
+            if (
+                robot.state == "to_parking"
+                and robot.position == robot.home_position
+            ):
+                robot.state = "idle"
+
+                print(
+                    f"Robot {robot.id} reached parking."
+                )
+
+                needs_replan = True
+
+                continue
+
             if robot.current_task is None:
                 continue
 
@@ -230,17 +243,17 @@ class Simulation:
                     f"Task {completed_task_id}!"
                 )
 
-                robot.current_task.status = (
-                    "completed"
-                )
-
-                robot.current_task.completed_at = (
-                self.simulation_time
-            )
+                robot.current_task.status = "completed"
+                robot.current_task.completed_at = self.simulation_time
 
                 robot.carrying = False
-                robot.state = "idle"
                 robot.current_task = None
+
+                # Move away from the delivery point
+                if robot.position != robot.home_position:
+                    robot.state = "to_parking"
+                else:
+                    robot.state = "idle"
 
                 needs_replan = True
 
@@ -298,7 +311,9 @@ class Simulation:
             self.robots,
             self.warehouse,
             self.simulation_step,
+            priority_offset=self.replan_number,
         )
+        self.replan_number += 1
 
     # ==================================================
     # RENDERING
@@ -328,7 +343,7 @@ class Simulation:
             self.tasks,
             self.warehouse_width,
             self.simulation_time,
-            self.simulation_duration,
+            self.config.simulation_duration,
             self.get_throughput(),
             
         )
@@ -339,11 +354,11 @@ class Simulation:
     # MAIN LOOP
     # ==================================================
 
-    def run(self) -> None:
+    def run(self) -> SimulationResult:
         while self.running:
 
             # ------------------------------
-            # Events
+            # 1. Handle events
             # ------------------------------
             if self.visual:
                 for event in pygame.event.get():
@@ -352,38 +367,37 @@ class Simulation:
                         self.running = False
 
                     elif (
-                        event.type
-                        == pygame.KEYDOWN
-                        and event.key
-                        == pygame.K_ESCAPE
+                        event.type == pygame.KEYDOWN
+                        and event.key == pygame.K_ESCAPE
                     ):
                         self.running = False
 
-            current_time = (
-                pygame.time.get_ticks()
-            )
+            current_time = pygame.time.get_ticks()
 
             # ------------------------------
-            # Generate new work
+            # 2. Generate new tasks
             # ------------------------------
+            # generate_task_if_needed()
+            # must stop creating tasks after
+            # simulation_duration
             self.generate_task_if_needed()
 
             # ------------------------------
-            # Execute planned movement
+            # 3. Move robots
             # ------------------------------
             self.move_robots_if_needed(
                 current_time
             )
 
             # ------------------------------
-            # Check whether goals changed
+            # 4. Check pickup/delivery
             # ------------------------------
             needs_replan = (
                 self.update_task_states()
             )
 
             # ------------------------------
-            # Assign waiting tasks
+            # 5. Assign waiting tasks
             # ------------------------------
             assignment_changed = (
                 self.assign_waiting_tasks()
@@ -393,34 +407,71 @@ class Simulation:
                 needs_replan = True
 
             # ------------------------------
-            # Recalculate coordinated paths
-            # only when necessary
+            # 6. Replan if something changed
             # ------------------------------
+            if (
+                self.has_stuck_robots()
+                and self.simulation_step
+                % self.config.replan_interval == 0
+                and self.simulation_step
+                != self.last_stuck_replan_step
+            ):
+                needs_replan = True
+
+                self.last_stuck_replan_step = (
+                    self.simulation_step
+                )
+
+                
             if needs_replan:
                 self.replan()
 
-            if self.simulation_time >= self.simulation_duration:
-                print("Simulation finished!")
+            # ------------------------------
+            # 7. Normal finish after draining
+            # ------------------------------
+            if (
+                self.simulation_time
+                >= self.config.simulation_duration
+                and self.all_work_finished()
+            ):
+                print(
+                    f"Simulation finished after draining "
+                    f"at {self.simulation_time}s!"
+                )
+
                 self.running = False
 
             # ------------------------------
-            # Draw
+            # 8. Emergency stop
+            # ------------------------------
+            elif (
+                self.simulation_time
+                >= (
+                    self.config.simulation_duration
+                    + self.config.max_drain_time
+                )
+            ):
+                print(
+                    "WARNING: maximum drain time reached."
+                )
+
+                self.running = False
+
+            # ------------------------------
+            # 9. Draw
             # ------------------------------
             if self.visual:
                 self.draw()
                 self.clock.tick(60)
 
         # ------------------------------
-        # Save results on exit
+        # 10. Return results
         # ------------------------------
-        save_results(
-            "results.csv",
-            self.robots,
-            self.tasks,
-            self.random_seed,
-            self.simulation_duration,
-            self.get_throughput(),
-           
+        return build_simulation_result(
+            robots=self.robots,
+            tasks=self.tasks,
+            config=self.config,
+            simulation_time=self.simulation_time,
         )
 
     def check_collisions(
@@ -477,21 +528,74 @@ class Simulation:
 
 
     def get_throughput(self) -> float:
-        completed_tasks = sum(
+
+        completed_by_horizon = sum(
             1
             for task in self.tasks
-            if task.status == "completed"
+            if (
+                task.completed_at is not None
+                and task.completed_at
+                <= self.config.simulation_duration
+            )
         )
 
-        if self.simulation_time == 0:
+        experiment_minutes = (
+            self.config.simulation_duration / 60
+        )
+
+        if experiment_minutes == 0:
             return 0.0
 
-        simulated_minutes = (
-            self.simulation_time / 60
+        return (
+            completed_by_horizon
+            / experiment_minutes
         )
 
-        return (
-            completed_tasks
-            / simulated_minutes
+
+    def all_work_finished(self) -> bool:
+        tasks_finished = all(
+            task.status == "completed"
+            for task in self.tasks
         )
+
+        robots_idle = all(
+            robot.current_task is None
+            for robot in self.robots
+        )
+
+        return tasks_finished and robots_idle
+
+
+    def has_stuck_robots(self) -> bool:
+
+        for robot in self.robots:
+
+            # Idle robot is allowed to stay still
+            if robot.current_task is None:
+                continue
+
+            if robot.state == "to_pickup":
+                goal = robot.current_task.pickup
+
+            elif robot.state == "to_delivery":
+                goal = robot.current_task.delivery
+
+            else:
+                continue
+
+            path_finished = (
+                not robot.path
+                or robot.path_index
+                >= len(robot.path) - 1
+            )
+
+            # Robot still has somewhere to go,
+            # but it has no route left.
+            if (
+                path_finished
+                and robot.position != goal
+            ):
+                return True
+
+        return False
 
