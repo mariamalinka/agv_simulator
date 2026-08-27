@@ -286,6 +286,7 @@ class Simulation:
             self.tasks,
             self.warehouse,
             self.simulation_time,
+            strategy=self.config.dispatch_strategy,
             
         )
         

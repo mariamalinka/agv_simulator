@@ -207,6 +207,7 @@ def main(
         simulation_step=simulation_step,
         warehouse_width=warehouse_width,
         config=config,
+        
     )
 
 

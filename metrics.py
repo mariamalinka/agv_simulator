@@ -28,6 +28,7 @@ def save_result(
                 "simulation_duration",
                 "simulated_time",
                 "task_interval",
+                "dispatch_strategy",
                 "tasks_generated",
                 "completed_tasks",
                 "completed_by_horizon",
@@ -40,6 +41,9 @@ def save_result(
                 "average_queue_time",
                 "average_cycle_time",
                 "drain_time",
+                "fleet_utilization",
+                "completion_rate",
+
             ])
 
         writer.writerow([
@@ -51,6 +55,8 @@ def save_result(
             result.simulation_duration,
             result.simulated_time,
             result.task_interval,
+
+            result.dispatch_strategy,
 
             result.tasks_generated,
             result.completed_tasks,
@@ -74,4 +80,14 @@ def save_result(
                 2,
             ),
             result.drain_time,
+
+            round(
+                result.fleet_utilization,
+                2,
+            ),
+
+            round(
+                result.completion_rate,
+                2,
+            ),
         ])

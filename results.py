@@ -14,6 +14,8 @@ class SimulationResult:
     simulated_time: int
     task_interval: int
 
+    dispatch_strategy: str
+
     tasks_generated: int
     completed_tasks: int
     waiting_tasks: int
@@ -30,7 +32,8 @@ class SimulationResult:
 
     completed_by_horizon: int
     drain_time: int
-
+    fleet_utilization: float
+    completion_rate: float
 
 def calculate_average_queue_time(tasks) -> float:
     values = [
@@ -133,11 +136,61 @@ def build_simulation_result(
     )
 
 
+    horizon = config.simulation_duration
+
+    busy_robot_time = 0
+
+    for task in tasks:
+
+        if task.assigned_at is None:
+            continue
+
+        # Task was not assigned during the
+        # official experiment period.
+        if task.assigned_at >= horizon:
+            continue
+
+        if task.completed_at is None:
+            busy_end = horizon
+        else:
+            busy_end = min(
+                task.completed_at,
+                horizon,
+            )
+
+        busy_robot_time += max(
+            0,
+            busy_end - task.assigned_at,
+        )
+
+    available_robot_time = (
+        len(robots) * horizon
+    )
+
+    if available_robot_time > 0:
+        fleet_utilization = (
+            busy_robot_time
+            / available_robot_time
+            * 100
+        )
+    else:
+        fleet_utilization = 0.0
+
+
+    if len(tasks) > 0:
+        completion_rate = (
+            completed_by_horizon
+            / len(tasks)
+            * 100
+        )
+    else:
+        completion_rate = 0.0
 
     experiment_id = (
-        f"R{len(robots)}"
-        f"_S{config.random_seed}"
-        f"_I{config.task_generation_interval}"
+        f"R{len(robots)}_"
+        f"S{config.random_seed}_"
+        f"I{config.task_generation_interval}_"
+        f"D{config.dispatch_strategy}"
     )
 
     return SimulationResult(
@@ -156,6 +209,8 @@ def build_simulation_result(
             config.task_generation_interval
         ),
 
+        dispatch_strategy=config.dispatch_strategy,
+
         tasks_generated=len(tasks),
         completed_tasks=completed_tasks,
         completed_by_horizon=completed_by_horizon,
@@ -171,4 +226,8 @@ def build_simulation_result(
         average_queue_time=avg_queue_time,
         average_cycle_time=avg_cycle_time,
         drain_time=drain_time,
+        fleet_utilization=fleet_utilization,
+        completion_rate=completion_rate,
+
+        
     )

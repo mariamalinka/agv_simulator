@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 @dataclass
 class SimulationConfig:
-    number_of_robots: int = 2
+    number_of_robots: int = 5
     simulation_duration: int = 600
     task_generation_interval: int = 15
     random_seed: int = 42
@@ -18,6 +18,7 @@ class SimulationConfig:
     visual: bool = True
     max_drain_time: int = 1200
     replan_interval: int = 5
+    dispatch_strategy: str = "nearest"
 
 # ==========================================
 # EXPERIMENT SETTINGS
