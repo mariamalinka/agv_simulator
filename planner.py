@@ -112,7 +112,7 @@ def replan_all_robots(
             + sorted_robots[:offset]
         )
 
-    # Robots with no task are stationary.
+    # Robots with no current movement goal are stationary.
     stationary_robot_ids = {
         robot.id
         for robot in sorted_robots
@@ -226,12 +226,6 @@ def replan_all_robots(
         # ---------------------------------
         # 4. A robot failed to find a path
         # ---------------------------------
-
-        print(
-            f"Robot {failed_robot.id} "
-            f"cannot find a safe path. "
-            f"It will wait."
-        )
 
         # Treat it as stationary
         stationary_robot_ids.add(

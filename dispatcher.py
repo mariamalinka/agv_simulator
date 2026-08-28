@@ -112,12 +112,6 @@ def assign_waiting_tasks(
                 simulation_time
             )
 
-            print(
-                f"Task {task.id} assigned "
-                f"to Robot {selected_robot.id} "
-                f"[{strategy}]"
-            )
-
             available_robots.remove(
                 selected_robot
             )

@@ -114,11 +114,6 @@ class Simulation:
 
         self.tasks.append(new_task)
 
-        print(
-            f"New Task {new_task.id}: "
-            f"{pickup} -> {delivery}"
-        )
-
         self.next_task_id += 1
 
         self.next_task_generation_time += (
@@ -183,10 +178,6 @@ class Simulation:
             ):
                 robot.state = "idle"
 
-                print(
-                    f"Robot {robot.id} reached parking."
-                )
-
                 needs_replan = True
 
                 continue
@@ -202,10 +193,6 @@ class Simulation:
                 and robot.position
                 == robot.current_task.pickup
             ):
-                print(
-                    f"Robot {robot.id} "
-                    f"reached pickup!"
-                )
 
                 robot.carrying = True
 
@@ -234,14 +221,6 @@ class Simulation:
                 and robot.position
                 == robot.current_task.delivery
             ):
-                completed_task_id = (
-                    robot.current_task.id
-                )
-
-                print(
-                    f"Robot {robot.id} completed "
-                    f"Task {completed_task_id}!"
-                )
 
                 robot.current_task.status = "completed"
                 robot.current_task.completed_at = self.simulation_time
@@ -435,10 +414,6 @@ class Simulation:
                 >= self.config.simulation_duration
                 and self.all_work_finished()
             ):
-                print(
-                    f"Simulation finished after draining "
-                    f"at {self.simulation_time}s!"
-                )
 
                 self.running = False
 
