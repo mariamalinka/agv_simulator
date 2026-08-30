@@ -1,4 +1,5 @@
 import csv
+import os
 import statistics
 from collections import defaultdict
 
@@ -8,8 +9,8 @@ import matplotlib.pyplot as plt
 def load_results(filename: str):
     with open(filename, newline="") as file:
         reader = csv.DictReader(file)
-
         return list(reader)
+
 
 def calculate_std(values) -> float:
     if len(values) < 2:
@@ -18,12 +19,10 @@ def calculate_std(values) -> float:
     return statistics.stdev(values)
 
 
-
 def calculate_summary(rows):
     groups = defaultdict(list)
 
     for row in rows:
-
         key = (
             int(row["robots"]),
             int(row["task_interval"]),
@@ -79,7 +78,6 @@ def calculate_summary(rows):
             throughput_values
         )
 
-        #standard deviation
         std_throughput = calculate_std(
             throughput_values
         )
@@ -91,7 +89,6 @@ def calculate_summary(rows):
         std_queue = calculate_std(
             queue_values
         )
-
 
         avg_cycle = statistics.mean(
             cycle_values
@@ -158,14 +155,12 @@ def calculate_summary(rows):
 
             "average_distance": avg_distance,
             "std_distance": std_distance,
-
         })
 
     return summaries
 
 
 def print_summary(summaries):
-
     summaries.sort(
         key=lambda x: (
             x["task_interval"],
@@ -221,7 +216,6 @@ def print_summary(summaries):
         print()
 
 
-
 def plot_metric(
     summaries,
     metric_key,
@@ -232,35 +226,27 @@ def plot_metric(
     strategy,
 ):
 
-    # Only keep the selected strategy
     filtered = [
         result
         for result in summaries
-        if result["dispatch_strategy"]
-        == strategy
+        if result["dispatch_strategy"] == strategy
     ]
 
-    task_intervals = sorted(
-        {
-            result["task_interval"]
-            for result in filtered
-        }
-    )
+    task_intervals = sorted({
+        result["task_interval"]
+        for result in filtered
+    })
 
     for interval in task_intervals:
 
-        # IMPORTANT:
-        # use filtered, NOT summaries
         interval_results = [
             result
             for result in filtered
-            if result["task_interval"]
-            == interval
+            if result["task_interval"] == interval
         ]
 
         interval_results.sort(
-            key=lambda result:
-            result["robots"]
+            key=lambda result: result["robots"]
         )
 
         robot_counts = [
@@ -337,17 +323,14 @@ def plot_strategy_comparison(
             result
             for result in summaries
             if (
-                result["task_interval"]
-                == task_interval
+                result["task_interval"] == task_interval
                 and
-                result["dispatch_strategy"]
-                == strategy
+                result["dispatch_strategy"] == strategy
             )
         ]
 
         results.sort(
-            key=lambda result:
-            result["robots"]
+            key=lambda result: result["robots"]
         )
 
         robot_counts = [
@@ -404,15 +387,28 @@ def plot_strategy_comparison(
     plt.close()
 
 
-
-
 if __name__ == "__main__":
 
-    rows = load_results(
-        "results.csv"
+    # =====================================
+    # File locations
+    # =====================================
+
+    graphs_folder = os.path.join(
+        "results",
+        "graphs",
     )
 
+    os.makedirs(
+        graphs_folder,
+        exist_ok=True,
+    )
 
+    rows = load_results(
+        os.path.join(
+            "results",
+            "results.csv",
+        )
+    )
 
     summaries = calculate_summary(
         rows
@@ -432,7 +428,10 @@ if __name__ == "__main__":
         std_key="std_throughput",
         ylabel="Throughput [tasks/min]",
         title="AGV Fleet Size vs Throughput",
-        filename="throughput_nearest.png",
+        filename=os.path.join(
+            graphs_folder,
+            "throughput_nearest.png",
+        ),
         strategy="nearest",
     )
 
@@ -442,7 +441,10 @@ if __name__ == "__main__":
         std_key="std_queue_time",
         ylabel="Average Queue Time [s]",
         title="AGV Fleet Size vs Queue Time",
-        filename="queue_time_nearest.png",
+        filename=os.path.join(
+            graphs_folder,
+            "queue_time_nearest.png",
+        ),
         strategy="nearest",
     )
 
@@ -452,7 +454,10 @@ if __name__ == "__main__":
         std_key="std_cycle_time",
         ylabel="Average Cycle Time [s]",
         title="AGV Fleet Size vs Cycle Time",
-        filename="cycle_time_nearest.png",
+        filename=os.path.join(
+            graphs_folder,
+            "cycle_time_nearest.png",
+        ),
         strategy="nearest",
     )
 
@@ -462,7 +467,10 @@ if __name__ == "__main__":
         std_key="std_drain_time",
         ylabel="Average Drain Time [s]",
         title="AGV Fleet Size vs Drain Time",
-        filename="drain_time_nearest.png",
+        filename=os.path.join(
+            graphs_folder,
+            "drain_time_nearest.png",
+        ),
         strategy="nearest",
     )
 
@@ -472,7 +480,10 @@ if __name__ == "__main__":
         std_key="std_utilization",
         ylabel="Fleet Utilization [%]",
         title="AGV Fleet Size vs Utilization",
-        filename="utilization_nearest.png",
+        filename=os.path.join(
+            graphs_folder,
+            "utilization_nearest.png",
+        ),
         strategy="nearest",
     )
 
@@ -482,7 +493,10 @@ if __name__ == "__main__":
         std_key="std_completion_rate",
         ylabel="Completion Rate [%]",
         title="AGV Fleet Size vs Completion Rate",
-        filename="completion_rate_nearest.png",
+        filename=os.path.join(
+            graphs_folder,
+            "completion_rate_nearest.png",
+        ),
         strategy="nearest",
     )
 
@@ -497,7 +511,10 @@ if __name__ == "__main__":
         std_key="std_cycle_time",
         ylabel="Average Cycle Time [s]",
         title="Dispatch Strategy Comparison",
-        filename="strategy_cycle_time_10s.png",
+        filename=os.path.join(
+            graphs_folder,
+            "strategy_cycle_time_10s.png",
+        ),
     )
 
     plot_strategy_comparison(
@@ -507,5 +524,12 @@ if __name__ == "__main__":
         std_key="std_distance",
         ylabel="Total Travel Distance [cells]",
         title="Dispatch Strategy vs Travel Distance",
-        filename="strategy_distance_10s.png",
+        filename=os.path.join(
+            graphs_folder,
+            "strategy_distance_10s.png",
+        ),
+    )
+
+    print(
+        f"Graphs saved to: {graphs_folder}"
     )

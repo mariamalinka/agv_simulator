@@ -1,6 +1,7 @@
 from main import main
 from config import SimulationConfig
 from metrics import save_result
+import os
 
 
 ROBOT_COUNTS = [1, 2, 3, 4, 5, 6]
@@ -36,10 +37,16 @@ for strategy in dispatch_strategies:
                     f"interval={task_interval}"
                 )
 
+
+                os.makedirs(
+                    "results",
+                    exist_ok=True,
+                )
+
                 result = main(config)
 
                 save_result(
-                    "results.csv",
+                    "results/results.csv",
                     result,
                 )
 
