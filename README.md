@@ -269,4 +269,4 @@ The full project report contains the system design, experimental methodology, re
 
 ## Author
 
-Maria M
+Maria Malinka
