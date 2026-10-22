@@ -33,6 +33,12 @@ The project is also used as an experimental platform to study how fleet size, ta
 
 Run all commands from the main project directory.
 
+### Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
 ### Visual simulation
 
 ```bash
@@ -66,7 +72,7 @@ results/graphs/
 ### Run tests
 
 ```bash
-pytest -q
+python -m pytest -q
 ```
 
 ## Experimental Setup
@@ -101,7 +107,7 @@ Overall, fleet size has a stronger effect on warehouse performance than the diff
 ## Project Structure
 
 ```text
-AGV_Warehouse/
+agv_simulator/
 ├── main.py
 ├── simulation.py
 ├── warehouse.py
@@ -112,6 +118,7 @@ AGV_Warehouse/
 ├── space_time_pathfinding.py
 ├── reservation.py
 ├── planner.py
+├── renderer.py
 ├── config.py
 ├── results.py
 ├── metrics.py
@@ -121,12 +128,16 @@ AGV_Warehouse/
 ├── results/
 │   ├── results.csv
 │   └── graphs/
+├── report/
+│   └── AGV_Warehouse_Report.pdf
+├── requirements.txt
+├── .gitignore
 └── README.md
 ```
 
 ## Report
 
-The full research report contains the system design, experimental methodology, validation, results, discussion, limitations, and conclusions in greater detail.
+The full research report ([`report/AGV_Warehouse_Report.pdf`](report/AGV_Warehouse_Report.pdf)) contains the system design, experimental methodology, validation, results, discussion, limitations, and conclusions in greater detail.
 
 ## Author
 
