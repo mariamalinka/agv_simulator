@@ -30,7 +30,7 @@ class LineWarehouse:
         return neighbors
 
 
-def test_robot_waits_for_reserved_cell():
+def test_robot_waits_exactly_one_step():
     warehouse = LineWarehouse()
 
     reservations = ReservationTable()
@@ -172,3 +172,4 @@ def test_no_path_when_goal_is_fully_blocked():
     )
 
     assert path == []
+

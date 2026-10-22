@@ -19,30 +19,3 @@ class SimulationConfig:
     max_drain_time: int = 1200
     replan_interval: int = 5
     dispatch_strategy: str = "nearest"
-
-# ==========================================
-# EXPERIMENT SETTINGS
-# ==========================================
-
-EXPERIMENT_ROBOT_COUNTS = [
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-]
-
-EXPERIMENT_SEEDS = [
-    1,
-    2,
-    3,
-    4,
-    5,
-]
-
-EXPERIMENT_TASK_INTERVALS = [
-    10,
-    15,
-    20,
-]

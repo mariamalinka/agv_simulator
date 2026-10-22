@@ -50,3 +50,4 @@ def test_path_must_start_at_robot_position():
             (5, 5),
             (5, 6),
         ])
+
